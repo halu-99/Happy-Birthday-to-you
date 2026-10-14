@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#eaf8ff">
+<title>しゃぼんだまたっち</title>
+<style>
+:root{--sky:#eaf8ff;--blue:#9bdff7;--deep:#4c8ba7;--ink:#416c80}
+*{box-sizing:border-box}
+body{margin:0;min-height:100svh;background:var(--sky);color:var(--ink);font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;display:grid;place-items:center;overflow:hidden}
+.app{width:min(100%,520px);height:100svh;max-height:920px;min-height:570px;padding:clamp(18px,5vw,30px);display:flex;flex-direction:column;gap:18px}
+header{display:flex;justify-content:space-between;align-items:end;gap:12px}
+.eyebrow{font-size:10px;letter-spacing:.22em;color:#8bb9ca;margin-bottom:7px}
+h1{font-size:clamp(25px,7vw,34px);font-weight:600;letter-spacing:-.04em;margin:0;color:#416f84}
+.score-label{font-size:10px;letter-spacing:.16em;color:#8bb9ca;text-align:right}
+.score{font-size:29px;line-height:1.2;font-weight:600;color:#416f84;text-align:right;font-variant-numeric:tabular-nums}
+.stage{position:relative;flex:1;min-height:340px;border-radius:25px;overflow:hidden;background:linear-gradient(180deg,#d9f3ff 0%,#e9f8ff 60%,#f4fcff 100%);border:1px solid #d4effa;isolation:isolate;touch-action:manipulation}
+.stage:before,.stage:after{content:"";position:absolute;pointer-events:none;border-radius:50%;background:#fff;opacity:.35;filter:blur(1px)}
+.stage:before{width:240px;height:240px;left:-130px;bottom:-125px}
+.stage:after{width:300px;height:300px;right:-170px;top:15%;opacity:.23}
+.stage-top{position:absolute;z-index:2;top:17px;left:18px;right:18px;display:flex;justify-content:space-between;font-size:10px;letter-spacing:.14em;color:#81b1c6;pointer-events:none}
+#field{position:absolute;inset:0;overflow:hidden}
+.bubble{position:absolute;bottom:-90px;border-radius:50%;border:1.5px solid rgba(112,205,239,.72);background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.98) 0 4%,rgba(255,255,255,.6) 7%,rgba(174,233,252,.23) 30%,rgba(111,206,241,.17) 65%,rgba(255,255,255,.48) 100%);box-shadow:inset -5px -7px 13px rgba(106,203,237,.12),inset 3px 4px 9px rgba(255,255,255,.8),0 3px 14px rgba(109,198,231,.08);cursor:pointer;will-change:transform;animation:rise var(--duration) linear forwards;outline:none;-webkit-tap-highlight-color:transparent}
+.bubble:before{content:"";position:absolute;width:25%;height:12%;left:22%;top:17%;border-radius:50%;background:rgba(255,255,255,.95);transform:rotate(-35deg);filter:blur(.3px)}
+.bubble:after{content:"";position:absolute;width:9%;height:9%;right:23%;bottom:23%;border-radius:50%;background:rgba(255,255,255,.85)}
+.bubble.pop{pointer-events:none;animation:pop .22s ease-out forwards!important}
+@keyframes rise{from{transform:translate3d(0,0,0) scale(.8);opacity:0}8%{opacity:1}75%{opacity:.95}to{transform:translate3d(var(--drift),-125vh,0) scale(1.08);opacity:.2}}
+@keyframes pop{0%{transform:scale(1);opacity:1}65%{transform:scale(1.35);opacity:.65}100%{transform:scale(.2);opacity:0}}
+.float-score{position:absolute;z-index:4;pointer-events:none;font-size:14px;font-weight:600;color:#5aabc9;animation:floatup .7s ease-out forwards}
+@keyframes floatup{to{transform:translateY(-32px);opacity:0}}
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;pointer-events:none;z-index:3}
+.center h2{font-size:19px;font-weight:500;margin:0 0 9px}
+.center p{font-size:12px;line-height:1.8;color:#80adbf;margin:0}
+.center.hidden{display:none}
+.controls{display:grid;grid-template-columns:1fr auto;gap:10px}
+button{border:0;font:inherit;cursor:pointer;transition:transform .12s,background .12s;-webkit-tap-highlight-color:transparent}
+button:active{transform:scale(.98)}
+#start{background:#9cdef4;color:#315f74;border-radius:15px;padding:16px 18px;font-size:14px;font-weight:600;letter-spacing:.04em;box-shadow:0 5px 0 #c8edf9}
+#start:hover{background:#8fd7f1}
+#pause{width:54px;border-radius:15px;background:#fff;color:#639bb1;border:1px solid #d9eef6;font-size:13px}
+#pause:disabled{opacity:.4}
+footer{font-size:10px;color:#9bbdca;letter-spacing:.09em;text-align:center}
+@media(min-height:800px){.app{gap:22px}.stage{min-height:440px}}
+@media(prefers-reduced-motion:reduce){.bubble{animation-duration:10s!important}}
+</style>
+</head>
+<body>
+<main class="app">
+<header>
+ <div><div class="eyebrow">BIRTHDAY GAME / 1015</div><h1>しゃぼんだまたっち</h1></div>
+ <div><div class="score-label">SCORE</div><div class="score" id="score">0000</div></div>
+</header>
+<section class="stage" id="stage" aria-label="シャボン玉ゲーム">
+ <div class="stage-top"><span id="status">READY TO FLOAT</span><span id="time">30 SEC</span></div>
+ <div id="field"></div>
+ <div class="center" id="intro"><h2>しゃぼんだまたっち</h2><p>上に飛んでいくシャボン玉を<br>消える前にたっちしてね。</p></div>
+ <div class="center hidden" id="result"><h2 id="result-title">おしまい。</h2><p id="result-text"></p></div>
+</section>
+<div class="controls">
+ <button id="start">あそぶ</button><button id="pause" disabled aria-label="一時停止">Ⅱ</button>
+</div>
+<footer>happy birthday to Ayame</footer>
+</main>
+<script>
+(()=>{
+const field=document.getElementById('field'),stage=document.getElementById('stage');
+const scoreEl=document.getElementById('score'),timeEl=document.getElementById('time'),statusEl=document.getElementById('status');
+const startBtn=document.getElementById('start'),pauseBtn=document.getElementById('pause');
+const intro=document.getElementById('intro'),result=document.getElementById('result');
+const resultTitle=document.getElementById('result-title'),resultText=document.getElementById('result-text');
+let score=0,seconds=30,running=false,paused=false,spawnTimer=null,clockTimer=null,spawnRate=720,combo=0,lastPop=0,bubbles=new Set();
+function scoreText(){scoreEl.textContent=String(score).padStart(4,'0')}
+function makeBubble(){
+ if(!running||paused)return;
+ const rect=field.getBoundingClientRect(),size=24+Math.random()*43;
+ const b=document.createElement('button');b.className='bubble';b.type='button';b.setAttribute('aria-label','シャボン玉を割る');
+ b.style.width=size+'px';b.style.height=size+'px';
+ b.style.left=(Math.random()*Math.max(1,rect.width-size))+'px';
+ b.style.setProperty('--duration',(5.1+Math.random()*3.9)+'s');
+ b.style.setProperty('--drift',((Math.random()-.5)*110)+'px');
+ b.addEventListener('animationend',e=>{if(e.animationName==='rise'){bubbles.delete(b);b.remove()}});
+ b.addEventListener('pointerdown',e=>{
+  if(!running||paused||b.classList.contains('pop'))return;
+  e.preventDefault();const now=performance.now();combo=now-lastPop<950?combo+1:1;lastPop=now;
+  const points=Math.min(30,10+(combo-1)*2);score+=points;scoreText();
+  const fr=b.getBoundingClientRect(),sr=stage.getBoundingClientRect(),label=document.createElement('span');
+  label.className='float-score';label.textContent='+'+points;label.style.left=(fr.left-sr.left+fr.width/2-12)+'px';label.style.top=(fr.top-sr.top+fr.height/2-12)+'px';field.appendChild(label);setTimeout(()=>label.remove(),750);
+  b.classList.add('pop');bubbles.delete(b);setTimeout(()=>b.remove(),230);
+ });
+ field.appendChild(b);bubbles.add(b);
+}
+function clearBubbles(){for(const b of bubbles)b.remove();bubbles.clear()}
+function begin(){
+ clearInterval(spawnTimer);clearInterval(clockTimer);clearBubbles();score=0;seconds=30;combo=0;lastPop=0;spawnRate=720;scoreText();timeEl.textContent='30 SEC';
+ running=true;paused=false;intro.classList.add('hidden');result.classList.add('hidden');
+ startBtn.textContent='やりなおす';pauseBtn.disabled=false;pauseBtn.textContent='Ⅱ';statusEl.textContent='FLOAT & POP';
+ spawnTimer=setInterval(makeBubble,spawnRate);makeBubble();
+ clockTimer=setInterval(()=>{if(!running||paused)return;seconds--;timeEl.textContent=String(seconds).padStart(2,'0')+' SEC';if(seconds<=0)finish()},1000);
+}
+function finish(){
+ running=false;paused=false;clearInterval(spawnTimer);clearInterval(clockTimer);pauseBtn.disabled=true;pauseBtn.textContent='Ⅱ';clearBubbles();
+ statusEl.textContent='NICE & EASY';timeEl.textContent='00 SEC';result.classList.remove('hidden');
+ resultTitle.textContent=score>=250?'すごい！':'おしまい。';resultText.textContent='スコア '+score+' 点。もういっかいやってみよう！';
+ startBtn.textContent='もう一回あそぶ';
+}
+startBtn.addEventListener('click',begin);
+pauseBtn.addEventListener('click',()=>{
+ if(!running)return;paused=!paused;
+ for(const b of bubbles)b.style.animationPlayState=paused?'paused':'running';
+ pauseBtn.textContent=paused?'▶':'Ⅱ';statusEl.textContent=paused?'PAUSED':'FLOAT & POP';
+});
+})();
+</script>
+</body>
+</html>
